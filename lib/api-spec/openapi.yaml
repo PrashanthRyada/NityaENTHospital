@@ -1,0 +1,902 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Nitya ENT Hospital public website and content management API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: public
+    description: Public hospital information and appointment requests
+  - name: admin
+    description: Administrator-only management operations
+  - name: storage
+    description: Secure media upload and serving
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /public/doctors:
+    get:
+      operationId: listPublicDoctors
+      tags: [public]
+      summary: List active doctors and their availability
+      responses:
+        "200":
+          description: Active doctors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Doctor"
+  /public/events:
+    get:
+      operationId: listPublicEvents
+      tags: [public]
+      summary: List published hospital events
+      responses:
+        "200":
+          description: Published events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HospitalEvent"
+  /public/achievements:
+    get:
+      operationId: listPublicAchievements
+      tags: [public]
+      summary: List published hospital achievements
+      responses:
+        "200":
+          description: Published achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Achievement"
+  /public/media:
+    get:
+      operationId: listPublicMedia
+      tags: [public]
+      summary: List published public media items
+      responses:
+        "200":
+          description: Published media items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaItem"
+  /public/reviews:
+    get:
+      operationId: getGoogleReviews
+      tags: [public]
+      summary: Return Google review source and available review data
+      responses:
+        "200":
+          description: Google review data or a link-only response when the Places API is not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoogleReviews"
+  /appointments:
+    post:
+      operationId: createAppointment
+      tags: [public]
+      summary: Request an appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Appointment request received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "400":
+          description: Invalid appointment request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/session:
+    get:
+      operationId: getAdminSession
+      tags: [admin]
+      summary: Check whether the signed-in user is an authorized hospital administrator
+      responses:
+        "200":
+          description: Current admin access state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSession"
+        "401":
+          description: Sign-in required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags: [admin]
+      summary: Get management dashboard counts
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+  /admin/appointments:
+    get:
+      operationId: listAdminAppointments
+      tags: [admin]
+      summary: List appointment requests
+      responses:
+        "200":
+          description: Appointment requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+  /admin/appointments/{id}:
+    patch:
+      operationId: updateAppointment
+      tags: [admin]
+      summary: Change appointment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentUpdate"
+      responses:
+        "200":
+          description: Updated appointment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+        "404":
+          description: Appointment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /admin/doctors:
+    get:
+      operationId: listAdminDoctors
+      tags: [admin]
+      summary: List all doctor records
+      responses:
+        "200":
+          description: Doctor records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Doctor"
+    post:
+      operationId: createDoctor
+      tags: [admin]
+      summary: Add a doctor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoctorInput"
+      responses:
+        "201":
+          description: Created doctor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+  /admin/doctors/{id}:
+    patch:
+      operationId: updateDoctor
+      tags: [admin]
+      summary: Update a doctor or their availability
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoctorUpdate"
+      responses:
+        "200":
+          description: Updated doctor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Doctor"
+    delete:
+      operationId: deleteDoctor
+      tags: [admin]
+      summary: Remove a doctor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Doctor removed
+  /admin/events:
+    get:
+      operationId: listAdminEvents
+      tags: [admin]
+      summary: List all hospital events
+      responses:
+        "200":
+          description: Event records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HospitalEvent"
+    post:
+      operationId: createEvent
+      tags: [admin]
+      summary: Create a hospital event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventInput"
+      responses:
+        "201":
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HospitalEvent"
+  /admin/events/{id}:
+    patch:
+      operationId: updateEvent
+      tags: [admin]
+      summary: Update a hospital event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventUpdate"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HospitalEvent"
+    delete:
+      operationId: deleteEvent
+      tags: [admin]
+      summary: Delete a hospital event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Event deleted
+  /admin/achievements:
+    get:
+      operationId: listAdminAchievements
+      tags: [admin]
+      summary: List all achievements
+      responses:
+        "200":
+          description: Achievement records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Achievement"
+    post:
+      operationId: createAchievement
+      tags: [admin]
+      summary: Add an achievement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AchievementInput"
+      responses:
+        "201":
+          description: Created achievement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Achievement"
+  /admin/achievements/{id}:
+    patch:
+      operationId: updateAchievement
+      tags: [admin]
+      summary: Update an achievement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AchievementUpdate"
+      responses:
+        "200":
+          description: Updated achievement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Achievement"
+    delete:
+      operationId: deleteAchievement
+      tags: [admin]
+      summary: Delete an achievement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Achievement deleted
+  /admin/media:
+    get:
+      operationId: listAdminMedia
+      tags: [admin]
+      summary: List media library items
+      responses:
+        "200":
+          description: Media records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MediaItem"
+    post:
+      operationId: createMedia
+      tags: [admin]
+      summary: Add an uploaded image or video to the media library
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaInput"
+      responses:
+        "201":
+          description: Created media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+  /admin/media/{id}:
+    patch:
+      operationId: updateMedia
+      tags: [admin]
+      summary: Update media metadata and visibility
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUpdate"
+      responses:
+        "200":
+          description: Updated media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaItem"
+    delete:
+      operationId: deleteMedia
+      tags: [admin]
+      summary: Remove media from the library
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Media record removed
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL for a media upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadUrlRequest"
+      responses:
+        "200":
+          description: Upload URL generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrlResponse"
+        "400":
+          description: Invalid upload metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    AdminSession:
+      type: object
+      properties:
+        authorized:
+          type: boolean
+        email:
+          type: ["string", "null"]
+      required: [authorized, email]
+    AdminOverview:
+      type: object
+      properties:
+        pendingAppointments:
+          type: integer
+        totalAppointments:
+          type: integer
+        activeDoctors:
+          type: integer
+        upcomingEvents:
+          type: integer
+        publishedAchievements:
+          type: integer
+        publishedMedia:
+          type: integer
+      required: [pendingAppointments, totalAppointments, activeDoctors, upcomingEvents, publishedAchievements, publishedMedia]
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        title:
+          type: string
+        specialty:
+          type: string
+        bio:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        availabilityDays:
+          type: array
+          items:
+            type: string
+        availabilityHours:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, title, specialty, bio, imageUrl, availabilityDays, availabilityHours, isActive, createdAt]
+    DoctorInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+        specialty:
+          type: string
+          minLength: 1
+        bio:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        availabilityDays:
+          type: array
+          items:
+            type: string
+        availabilityHours:
+          type: string
+        isActive:
+          type: boolean
+      required: [name, title, specialty, bio, availabilityDays, availabilityHours, isActive]
+    DoctorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        title:
+          type: string
+          minLength: 1
+        specialty:
+          type: string
+        bio:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        availabilityDays:
+          type: array
+          items:
+            type: string
+        availabilityHours:
+          type: string
+        isActive:
+          type: boolean
+    Appointment:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientName:
+          type: string
+        patientPhone:
+          type: string
+        patientEmail:
+          type: ["string", "null"]
+        visitType:
+          type: string
+        doctorId:
+          type: ["integer", "null"]
+        doctorName:
+          type: ["string", "null"]
+        preferredDate:
+          type: string
+          format: date
+        preferredSlot:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, patientName, patientPhone, patientEmail, visitType, doctorId, doctorName, preferredDate, preferredSlot, status, createdAt]
+    AppointmentInput:
+      type: object
+      properties:
+        patientName:
+          type: string
+          minLength: 1
+        patientPhone:
+          type: string
+          minLength: 7
+        patientEmail:
+          type: ["string", "null"]
+          format: email
+        visitType:
+          type: string
+          minLength: 1
+        doctorId:
+          type: ["integer", "null"]
+        preferredDate:
+          type: string
+          format: date
+        preferredSlot:
+          type: string
+          minLength: 1
+      required: [patientName, patientPhone, visitType, preferredDate, preferredSlot]
+    AppointmentUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+      required: [status]
+    HospitalEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        registrationUrl:
+          type: ["string", "null"]
+        isPublished:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, description, startsAt, location, imageUrl, registrationUrl, isPublished, createdAt]
+    EventInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        registrationUrl:
+          type: ["string", "null"]
+        isPublished:
+          type: boolean
+      required: [title, description, startsAt, location, isPublished]
+    EventUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        startsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        registrationUrl:
+          type: ["string", "null"]
+        isPublished:
+          type: boolean
+    Achievement:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        achievedYear:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        isPublished:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, description, achievedYear, imageUrl, isPublished, createdAt]
+    AchievementInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        achievedYear:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        isPublished:
+          type: boolean
+      required: [title, description, achievedYear, isPublished]
+    AchievementUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        achievedYear:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        isPublished:
+          type: boolean
+    MediaItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        caption:
+          type: string
+        objectPath:
+          type: string
+        assetUrl:
+          type: string
+        mediaType:
+          type: string
+          enum: [image, video]
+        altText:
+          type: string
+        isHeroVideo:
+          type: boolean
+        isPublished:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, caption, objectPath, assetUrl, mediaType, altText, isHeroVideo, isPublished, sortOrder, createdAt]
+    MediaInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        caption:
+          type: string
+        objectPath:
+          type: string
+          minLength: 1
+        mediaType:
+          type: string
+          enum: [image, video]
+        altText:
+          type: string
+        isHeroVideo:
+          type: boolean
+        isPublished:
+          type: boolean
+        sortOrder:
+          type: integer
+      required: [title, caption, objectPath, mediaType, altText, isHeroVideo, isPublished, sortOrder]
+    MediaUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        caption:
+          type: string
+        altText:
+          type: string
+        isHeroVideo:
+          type: boolean
+        isPublished:
+          type: boolean
+        sortOrder:
+          type: integer
+    GoogleReview:
+      type: object
+      properties:
+        authorName:
+          type: string
+        rating:
+          type: number
+        text:
+          type: string
+        relativeTime:
+          type: string
+        publishedAt:
+          type: ["string", "null"]
+      required: [authorName, rating, text, relativeTime, publishedAt]
+    GoogleReviews:
+      type: object
+      properties:
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/GoogleReview"
+        averageRating:
+          type: ["number", "null"]
+        totalReviewCount:
+          type: ["integer", "null"]
+        reviewsUrl:
+          type: string
+          format: uri
+        sourceConfigured:
+          type: boolean
+      required: [reviews, averageRating, totalReviewCount, reviewsUrl, sourceConfigured]
+    UploadUrlRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+      required: [name, size, contentType]
+    UploadUrlResponse:
+      type: object
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/UploadUrlRequest"
+      required: [uploadURL, objectPath]
+
